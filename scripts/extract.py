@@ -10,28 +10,36 @@ RAW_DIR = BASE_DIR / 'raw_data'
 RAW_DIR.mkdir(exist_ok=True)
 
 
-url_list = 'http://ufcstats.com/statistics/fighters?char=a&page=all'
-resp = requests.get(url_list)
-soup = BeautifulSoup(resp.text, 'lxml')
-
 fighters_links = []
-for row in soup.find('tbody').find_all('tr'):
-    a = row.find('a')
-    if a and a.get('href'):
-        href = a['href']
-        if href.startswith('http'):
-            fighters_links.append(href)
-        else:
-            fighters_links.append('http://ufcstats.com' + href)
+for char in 'abcdefghijklmnopqrstuvwxyz':
+    url_list = f'http://ufcstats.com/statistics/fighters?char={char}&page=all'
+    resp = requests.get(url_list)
+    soup = BeautifulSoup(resp.text, 'lxml')
+
+    tbody = soup.find('tbody')
+    if not tbody:
+        continue
+    for row in tbody.find_all('tr'):
+        a = row.find('a')
+        if a and a.get('href'):
+            href = a['href']
+            if href.startswith('http'):
+                fighters_links.append(href)
+            else:
+                fighters_links.append('http://ufcstats.com' + href)
+    time.sleep(1)
 
 data = []
-data = []
-TARGET_COUNT = 10
+TARGET_COUNT = 100
 
-for i, link in enumerate(fighters_links):
+total_links = len(fighters_links)
+print(f"Total de links coletados: {total_links}")
+
+for i, link in enumerate(fighters_links, 1):
     if len(data) >= TARGET_COUNT:
         break
-        
+    
+    print(f"\rProcessando {i}/{total_links} - {len(data)}/{TARGET_COUNT} coletados", end='', flush=True)
     try:
         resp = requests.get(link)
         soup = BeautifulSoup(resp.text, 'lxml')
@@ -41,7 +49,9 @@ for i, link in enumerate(fighters_links):
         
         record_text = soup.find('span', class_='b-content__title-record').text.strip()
         
-        # Contar Lutas no UFC
+        # Contar Vitórias e Derrotas no UFC
+        ufc_wins = 0
+        ufc_losses = 0
         ufc_fights = 0
         history_table = soup.find('table', class_='b-fight-details__table')
         if history_table:
@@ -52,9 +62,19 @@ for i, link in enumerate(fighters_links):
                     event_name = cols[6].text.strip()
                     if 'UFC' in event_name:
                         ufc_fights += 1
+                        result = cols[0].text.strip().lower()
+                        if result == 'win':
+                            ufc_wins += 1
+                        elif result == 'loss':
+                            ufc_losses += 1
 
-        if ufc_fights < 5:
+        if ufc_fights < 8:
             continue
+
+        # Filtrar apenas lutadores com mais vitórias que derrotas no UFC
+        if ufc_wins <= ufc_losses:
+            continue
+
 
         
         slpm = td_avg = sub_avg = 0.0
@@ -79,6 +99,7 @@ for i, link in enumerate(fighters_links):
             "ufc_fights": ufc_fights,
             "record": record_text.split(":")[1].strip()
         })
+        print(f"{len(data)}/{TARGET_COUNT} concluidos")
         time.sleep(1)
         
     except Exception as e:
