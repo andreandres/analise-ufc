@@ -27,14 +27,14 @@ print("\n" + "=" * 60)
 print("TOP 10 STRIKERS (maior SLpM)")
 print("=" * 60)
 strikers_top = df[df['estilo']=='Striker'].nlargest(10, 'slpm')
-print(strikers_top[['nome', 'slpm', 'td_avg']].to_string(index=False))
+print(strikers_top[['nome', 'slpm', 'td_avg', 'record']].to_string(index=False))
 
 # Top Grapplers por Takedowns
 print("\n" + "=" * 60)
 print("TOP 10 GRAPPLERS (maior TD Avg)")
 print("=" * 60)
 grapplers_top = df[df['estilo']=='Grappler'].nlargest(10, 'td_avg')
-print(grapplers_top[['nome', 'td_avg', 'sub_avg']].to_string(index=False))
+print(grapplers_top[['nome', 'td_avg', 'sub_avg', 'record']].to_string(index=False))
 
 # Médias por estilo
 print("\n" + "=" * 60)
