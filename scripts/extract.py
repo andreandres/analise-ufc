@@ -49,16 +49,60 @@ for i, link in enumerate(fighters_links, 1):
     print(f"\rProcessando {i}/{total_links} - {contador_inseridos} lutadores qualificados salvos", end='', flush=True)
     
     try:
-        resp = requests.get(link)
+        resp = session.get(link, timeout=15)
         soup = BeautifulSoup(resp.text, 'lxml')
         
         name = soup.find('span', class_='b-content__title-highlight').text.strip()
         record_text = soup.find('span', class_='b-content__title-record').text.strip()
         
-        # Contar Vitórias e Derrotas no UFC
+       
+        altura = "Desconhecida"
+        peso_categoria = "Desconhecido"
+        envergadura = "Desconhecida"
+        base = "Desconhecida"
+        
+        
+        slpm = td_avg = sub_avg = str_acc = str_def = td_acc = td_def = 0.0
+
+        for li in soup.find_all('li', class_='b-list__box-list-item'):
+            
+            texto_limpo = " ".join(li.text.split())
+            t = texto_limpo
+            
+            try:
+                
+                if 'Height:' in t:
+                    altura = t.split('Height:')[1].strip()
+                elif 'Weight:' in t:
+                    peso_categoria = t.split('Weight:')[1].strip()
+                elif 'Reach:' in t:
+                    envergadura = t.split('Reach:')[1].strip()
+                elif 'STANCE:' in t:
+                    base = t.split('STANCE:')[1].strip()
+                    
+                # Pegar as stats das pag dos lutadores
+                elif 'SLpM:' in t:
+                    slpm = float(t.split('SLpM:')[1].strip())
+                elif 'Str. Acc.:' in t:
+                    str_acc = float(t.split('Str. Acc.:')[1].replace('%', '').strip())
+                elif 'Str. Def.:' in t:
+                    str_def = float(t.split('Str. Def.:')[1].replace('%', '').strip())
+                elif 'TD Avg.:' in t:
+                    td_avg = float(t.split('TD Avg.:')[1].strip())
+                elif 'TD Acc.:' in t:
+                    td_acc = float(t.split('TD Acc.:')[1].replace('%', '').strip())
+                elif 'TD Def.:' in t:
+                    td_def = float(t.split('TD Def.:')[1].replace('%', '').strip())
+                elif 'Sub. Avg.:' in t:
+                    sub_avg = float(t.split('Sub. Avg.:')[1].strip())
+            except:
+                pass
+
+        # Contador de vitorias e derrotas
         ufc_wins = 0
         ufc_losses = 0
         ufc_fights = 0
+        
         history_table = soup.find('table', class_='b-fight-details__table')
         if history_table:
             rows = history_table.find_all('tr')
@@ -74,51 +118,50 @@ for i, link in enumerate(fighters_links, 1):
                         elif result == 'loss':
                             ufc_losses += 1
 
-
+        # Filtro pra n pegar bagre
         if ufc_fights < 7 or ufc_wins <= ufc_losses:
             continue
 
-        slpm = td_avg = sub_avg = 0.0
-        for li in soup.find_all('li', class_='b-list__box-list-item'):
-            t = li.text.strip()
-            try:
-                if 'SLpM' in t:
-                    slpm = float(t.split('SLpM:')[1].strip().split()[0])
-                if 'TD Avg.' in t:
-                    td_avg = float(t.split('TD Avg.:')[1].strip().split()[0])
-                if 'Sub. Avg.' in t:
-                    sub_avg = float(t.split('Sub. Avg.:')[1].strip().split()[0])
-            except (ValueError, IndexError):
-                pass
-        
+        # Estrutura do documento
         documento_mongo = {
             "nome": name,
             "url_perfil": link,
             "cartel_geral": record_text.split(":")[1].strip(),
+            "caracteristicas_fisicas": {
+                "altura": altura,
+                "peso_lbs": peso_categoria,
+                "envergadura": envergadura,
+                "base_luta": base
+            },
             "experiencia_ufc": {
                 "lutas": ufc_fights,
                 "vitorias": ufc_wins,
                 "derrotas": ufc_losses
             },
             "estatisticas": {
-                "slpm": slpm,
-                "td_avg": td_avg,
-                "sub_avg": sub_avg
+                "striking_volume_slpm": slpm,
+                "striking_precisao_pct": str_acc,
+                "striking_defesa_pct": str_def,
+                "quedas_media_tdavg": td_avg,
+                "quedas_precisao_pct": td_acc,
+                "quedas_defesa_pct": td_def,
+                "finalizacoes_media": sub_avg
             }
         }
 
+        # Mandar pro DB
         collection.update_one(
             {"url_perfil": link},
             {"$set": documento_mongo},
             upsert=True
         )
-        contador_inseridos += 1
         
-        #Sleep pro servidor n achar q e bot xing ling
+        contador_inseridos += 1
         time.sleep(1)
         
     except Exception as e:
         print(f"\nErro em {link}: {e}")
         continue
+        
 
 print(f"\n\nExtração concluída! Total de {contador_inseridos} lutadores salvos no banco.")
