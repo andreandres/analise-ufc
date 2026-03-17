@@ -86,6 +86,3 @@ Após os dados estarem no MongoDB, rode o script de exportação para gerar o ar
 python scripts/export_to_csv.py
 ```
 O arquivo será salvo automaticamente na pasta `raw_data/`.
-
-## 🔒 Segurança
-Este projeto utiliza a biblioteca `python-dotenv` para isolar credenciais. A pasta `raw_data/` e o arquivo `.env` estão explicitamente ignorados no `.gitignore` para evitar vazamento de dados sensíveis ou subida de arquivos pesados no versionamento.
