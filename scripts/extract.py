@@ -17,6 +17,8 @@ collection = db["lutadores_stats"]
 
 print("Conectado ao banco de dados")
 
+# configurar retries para nao cair no sistema de seguranca do site por muitas requisicoes
+
 session = requests.Session()
 session.headers.update({
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -29,6 +31,8 @@ retry_strategy = Retry(
 adapter = HTTPAdapter(max_retries=retry_strategy)
 session.mount('http://', adapter)
 session.mount('https://', adapter)
+
+#pegar o link dos perfis 
 
 fighters_links = []
 for char in 'abcdefghijklmnopqrstuvwxyz':
@@ -63,6 +67,9 @@ for i, link in enumerate(fighters_links, 1):
         
         name = soup.find('span', class_='b-content__title-highlight').text.strip()
         record_text = soup.find('span', class_='b-content__title-record').text.strip()
+        
+
+        #pegar características físicas e estatísticas
         
         altura = "null"
         peso_categoria = "null"
@@ -100,6 +107,8 @@ for i, link in enumerate(fighters_links, 1):
             except:
                 pass
 
+        # pegar cartel 
+
         ufc_wins = 0
         ufc_losses = 0
         ufc_fights = 0
@@ -119,8 +128,12 @@ for i, link in enumerate(fighters_links, 1):
                         elif result == 'loss':
                             ufc_losses += 1
 
+        #excluir bagres
+
         if ufc_fights < 7 or ufc_wins <= ufc_losses:
             continue
+
+        #estrutura do documento
 
         documento_mongo = {
             "nome": name,
