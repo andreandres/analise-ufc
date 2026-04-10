@@ -10,7 +10,6 @@ Este projeto é um pipeline completo de Extração, Transformação e Carga (ETL
 
 O sistema coleta estatísticas detalhadas (Striking, Grappling, Cartel), estrutura esses dados em documentos NoSQL para suportar aninhamento complexo, permite a exportação achatada (flattening) e, finalmente, consome esses dados em um painel analítico (Power BI) para tomada de decisão tática e ranqueamento de atletas.
 
-> 📸 *[DICA: Substitua este aviso pela imagem do seu dashboard finalizado]*
 
 ## 🏗️ Arquitetura e Fluxo de Dados
 
